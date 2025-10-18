@@ -3691,3 +3691,24 @@ def test_setitem_float_nan_is_na(using_nan_is_na):
         ser[2] = np.nan
         assert isinstance(ser[2], float)
         assert np.isnan(ser[2])
+
+
+def test_pow_with_all_na_float():
+    # GH#62520
+
+    s = pd.Series([None, None], dtype="float64[pyarrow]")
+    result = s.pow(2)
+    expected = pd.Series([pd.NA, pd.NA], dtype="float64[pyarrow]")
+    tm.assert_series_equal(result, expected)
+
+
+def test_cast_pontwise_result_decimal_nan():
+    # GH#62522 we don't want to get back null[pyarrow] here
+    ser = pd.Series([], dtype="float64[pyarrow]")
+    arr = ser.array
+    item = Decimal("NaN")
+
+    result = arr._cast_pointwise_result([item])
+
+    pa_type = result.dtype.pyarrow_dtype
+    assert pa.types.is_decimal(pa_type)
